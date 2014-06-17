@@ -1,0 +1,3 @@
+#!/bin/bash
+source $HOME/.cron_env
+/usr/bin/php /var/www/bin/rotateSnapshotEC2.php --retainDays=10
