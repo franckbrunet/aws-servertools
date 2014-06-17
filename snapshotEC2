@@ -1,0 +1,26 @@
+#!/bin/bash
+SNAPSHOT_LOG=/var/log/ec2-snapshots.log
+source $HOME/.cron_env
+
+TIMESTAMP="["`date +'%Y-%m-%d %H:%M:%S'`"]"
+echo "$TIMESTAMP ############ Starting daily snapshots ############" >> $SNAPSHOT_LOG
+
+INSTANCE_ID=`/usr/bin/ec2metadata --instance-id`
+TIMESTAMP="["`date +'%Y-%m-%d %H:%M:%S'`"]"
+echo "$TIMESTAMP Instance ID: $INSTANCE_ID" >> $SNAPSHOT_LOG
+
+VOLUME_IDS=`ec2-describe-instance-attribute $INSTANCE_ID -b | awk '{ print $3; }' | tr -s '\n' ' '`
+TIMESTAMP="["`date +'%Y-%m-%d %H:%M:%S'`"]"
+echo "$TIMESTAMP Volume IDs: $VOLUME_IDS" >> $SNAPSHOT_LOG
+
+INSTANCE_NAME=`ec2-describe-tags --filter "resource-id=$INSTANCE_ID" --filter "key=Name" | sed 's/^.*Name[\t|\s]*\(.*\)$/\1/'`
+TIMESTAMP="["`date +'%Y-%m-%d %H:%M:%S'`"]"
+echo "$TIMESTAMP Instance Name: $INSTANCE_NAME" >> $SNAPSHOT_LOG
+
+SNAPSHOT_IDS=`/usr/bin/ec2-consistent-snapshot --mysql --mysql-defaults-file $HOME/.my.dbsnapshot --description "$INSTANCE_NAME Daily Snapshot $TIMESTAMP" $VOLUME_IDS  | tr -s '\n' ' '`
+TIMESTAMP="["`date +'%Y-%m-%d %H:%M:%S'`"]"
+echo "$TIMESTAMP Created snapshots : $SNAPSHOT_IDS" >> $SNAPSHOT_LOG
+
+TAGS=`ec2-create-tags $SNAPSHOT_IDS --tag Name="$INSTANCE_NAME"`
+TIMESTAMP="["`date +'%Y-%m-%d %H:%M:%S'`"]"
+echo "$TIMESTAMP Added Tags to the snapshots : $SNAPSHOT_IDS" >> $SNAPSHOT_LOG
